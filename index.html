@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Surprise Website</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Fredoka One', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: #3b9cd7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .active {
+            display: flex;
+        }
+
+        .canvas-bg {
+            background-color: #f2f7fa;
+        }
+
+        .passcode-layout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+            max-width: 800px;
+        }
+
+        .polaroid-frame {
+            background: white;
+            padding: 15px 15px 40px 15px;
+            border-radius: 2px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            position: relative;
+            transform: rotate(-3deg);
+        }
+
+        .polaroid-frame img {
+            width: 210px;
+            height: 230px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .ribbon-decor {
+            position: absolute;
+            top: -18px;
+            right: -12px;
+            font-size: 2.5rem;
+            transform: rotate(15deg);
+            z-index: 5;
+        }
+
+        .bear-sticker {
+            position: absolute;
+            bottom: -22px;
+            left: -18px;
+            font-size: 3.5rem;
+            z-index: 5;
+        }
+
+        .keypad-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+        }
+
+        .passcode-header {
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .slots-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .slot {
+            width: 32px;
+            height: 32px;
+            border: 2px solid white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            background-color: transparent;
+            color: white;
+        }
+
+        .grid-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-gap: 15px;
+            justify-content: center;
+            width: 180px;
+        }
+
+        .dial-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #e2725b;
+            border: 2px solid white;
+            color: white;
+            font-size: 1.3rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.1s, color 0.1s;
+        }
+
+        .dial-btn:active {
+            background: white;
+            color: #e2725b;
+        }
+
+        .dial-btn.del-btn {
+            background: #c0392b;
+            font-size: 1rem;
+        }
+
+        .content-title {
+            font-size: 2.4rem;
+            color: #1e70cf;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .btn-action {
+            padding: 10px 45px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn-yes { background-color: #1e70cf; color: white; position: relative; z-index: 1; }
+        .btn-no { background-color: #1e70cf; color: white; position: absolute; transition: all 0.15s ease; }
+        .btn-retry { background-color: #1e70cf; color: white; padding: 12px 50px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; border: none; cursor: pointer; margin-top: 20px; }
+        .btn-blow { background-color: #1e70cf; color: white; padding: 8px 45px; border-radius: 18px; margin-top: 30px; font-size: 1.1rem; font-weight: bold; border: none; cursor: pointer; }
+
+        .btn-group {
+            display: flex;
+            gap: 40px;
+            margin-top: 40px;
+            position: relative;
+            width: 400px;
+            height: 80px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Wrong passcode shake */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+        .shake {
+            animation: shake 0.4s ease;
+        }
+
+        /* ---- SCREEN 2: Wrong Passcode ---- */
+        #screen-wrong .wrong-emoji {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+        #screen-wrong h2 {
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 10px;
+        }
+        #screen-wrong p {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 20px;
+        }
+
+        /* ---- SCREEN 3: Yes/No ---- */
+        #screen-yesno h2 {
+            font-size: 2.2rem;
+            color: white;
+            margin-bottom: 10px;
+        }
+        #screen-yesno p {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.9);
+        }
+
+        /* ---- SCREEN 4: Gifts ---- */
+        #screen-gifts {
+            background-color: #f2f7fa;
+        }
+        #screen-gifts .content-title {
+            font-size: 2rem;
+        }
+
+        .gifts-container {
+            display: flex;
+            gap: 35px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .gift-element {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .gift-element:hover {
+            transform: scale(1.1);
+        }
+
+        .gift-label {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .vector-gift {
+            width: 90px;
+            height: 80px;
+            background-color: #4ba3e3;
+            border-radius: 4px;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .vector-gift::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 42%; width: 16%; height: 100%;
+            background-color: #e8533c;
+        }
+
+        .vector-gift-lid {
+            width: 100px;
+            height: 20px;
+            background-color: #4ba3e3;
+            border-radius: 4px;
+            margin-bottom: -4px;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .vector-gift-lid::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 43%; width: 14%; height: 100%;
+            background-color: #e8533c;
+        }
+
+        .vector-ribbon-bow {
+            display: flex;
+            justify-content: center;
+            margin-bottom: -8px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .bow-side {
+            width: 24px;
+            height: 18px;
+            border: 4px solid #e8533c;
+            border-radius: 50% 50% 0 50%;
+            transform: rotate(-15deg);
+            background: transparent;
+        }
+        .bow-side.right {
+            transform: rotate(105deg);
+            margin-left: -5px;
+        }
+
+        /* Gift modal */
+        .gift-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .gift-modal-overlay.show {
+            display: flex;
+        }
+        .gift-modal {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .gift-modal .gift-emoji {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        .gift-modal h3 {
+            font-size: 1.5rem;
+            color: #1e70cf;
+            margin-bottom: 10px;
+        }
+        .gift-modal p {
+            font-size: 1rem;
+            color: #555;
+            line-height: 1.5;
+        }
+        .gift-modal .close-modal {
+            position: absolute;
+            top: 12px; right: 16px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #aaa;
+            background: none;
+            border: none;
+        }
+        .btn-next-cake {
+            margin-top: 30px;
+            background-color: #1e70cf;
+            color: white;
+            padding: 10px 40px;
+            border-radius: 20px;
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* ---- SCREEN 5: Cake ---- */
+        #screen-cake {
+            background-color: #f2f7fa;
+        }
+        #screen-cake .content-title {
+            font-size: 2rem;
+            margin-bottom: 0;
+        }
+
+        .cake-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        .candles-tier {
+            display: flex;
+            gap: 12px;
+            margin-bottom: -5px;
+            z-index: 2;
+        }
+
+        .vector-candle {
+            width: 8px;
+            height: 35px;
+            background: linear-gradient(to bottom, #ff9ebb, #ff6b8b);
+            position: relative;
+            border-radius: 2px;
+        }
+
+        .vector-flame {
+            width: 10px;
+            height: 14px;
+            background-color: #ff9800;
+            border-radius: 50% 50% 20% 20%;
+            position: absolute;
+            top: -16px;
+            left: -1px;
+            animation: flicker 0.6s infinite alternate;
+        }
+
+        .vector-flame.out {
+            display: none;
+        }
+
+        .vector-cake-body {
+            width: 220px;
+            height: 110px;
+            background-color: #bfe3f7;
+            border-radius: 20px 20px 10px 10px;
+            position: relative;
+            border: 4px solid #a3d4f0;
+            overflow: hidden;
+        }
+
+        .frosting-drips {
+            width: 100%;
+            height: 35px;
+            background-color: #ffffff;
+            position: absolute;
+            top: 0;
+            display: flex;
+        }
+
+        .drip {
+            flex: 1;
+            height: 45px;
+            background-color: #ffffff;
+            border-radius: 0 0 15px 15px;
+            margin-top: -10px;
+        }
+
+        .drip:nth-child(even) {
+            height: 52px;
+        }
+
+        .cake-message {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            color: #1e70cf;
+            font-weight: bold;
+        }
+
+        /* Confetti */
+        .confetti-piece {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            border-radius: 2px;
+            animation: confettiFall linear forwards;
+            z-index: 200;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        @keyframes flicker {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.15) rotate(2deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .passcode-layout {
+                flex-direction: column;
+                gap: 30px;
+            }
+            .polaroid-frame {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SCREEN 1: Passcode Lock -->
+    <div id="screen-1" class="screen active">
+        <div class="passcode-layout">
+            <div class="polaroid-frame">
+                <div class="ribbon-decor">🎀</div>
+                <img src="us.jpg" alt="Our Picture">
+                <div class="bear-sticker">🧸</div>
+            </div>
+
+            <div class="keypad-panel">
+                <div class="passcode-header">Enter a passcode</div>
+                <div class="slots-container" id="slots-container">
+                    <div class="slot" id="slot-0"></div>
+                    <div class="slot" id="slot-1"></div>
+                    <div class="slot" id="slot-2"></div>
+                    <div class="slot" id="slot-3"></div>
+                </div>
+                <div class="grid-keypad">
+                    <div class="dial-btn" onclick="pressbutton('1')">1</div>
+                    <div class="dial-btn" onclick="pressbutton('2')">2</div>
+                    <div class="dial-btn" onclick="pressbutton('3')">3</div>
+                    <div class="dial-btn" onclick="pressbutton('4')">4</div>
+                    <div class="dial-btn" onclick="pressbutton('5')">5</div>
+                    <div class="dial-btn" onclick="pressbutton('6')">6</div>
+                    <div class="dial-btn" onclick="pressbutton('7')">7</div>
+                    <div class="dial-btn" onclick="pressbutton('8')">8</div>
+                    <div class="dial-btn" onclick="pressbutton('9')">9</div>
+                    <div class="dial-btn del-btn" onclick="deleteLast()">⌫</div>
+                    <div class="dial-btn" onclick="pressbutton('0')">0</div>
+                    <div class="dial-btn" style="background:transparent;border-color:transparent;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: Wrong Passcode -->
+    <div id="screen-wrong" class="screen">
+        <div class="wrong-emoji">😿</div>
+        <h2>Wrong passcode!</h2>
+        <p>Only the right person knows the secret 🤫</p>
+        <button class="btn-retry" onclick="goToScreen('screen-1'); resetPasscode();">Try Again</button>
+    </div>
+
+    <!-- SCREEN 3: Yes / No -->
+    <div id="screen-yesno" class="screen">
+        <div style="font-size:5rem; margin-bottom:20px;">🥳</div>
+        <h2>Welcome, birthday girl! 🎉</h2>
+        <p style="margin-top:10px; color:rgba(255,255,255,0.9); font-size:1.1rem;">Are you ready for your surprise?</p>
+        <div class="btn-group">
+            <button class="btn-action btn-yes" onclick="goToScreen('screen-gifts')">Yes! 🎁</button>
+            <button class="btn-action btn-no" id="btn-no" onmouseover="runAway(this)" ontouchstart="runAway(this)">No 😒</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 4: Gifts -->
+    <div id="screen-gifts" class="screen canvas-bg">
+        <div class="content-title">Your Special Gifts 🎁</div>
+        <p style="color:#555; font-size:1rem;">Tap each gift to reveal it!</p>
+
+        <div class="gifts-container">
+            <!-- Gift 1 -->
+            <div class="gift-element" onclick="openGift(0)">
+                <div class="vector-ribbon-bow"><div class="bow-side"></div><div class="bow-side right"></div></div>
+                <div class="vector-gift-lid"></div>
+                <div class="vector-gift"></div>
+                <div class="gift-label">Gift 1 🎀</div>
+            </div>
+            <!-- Gift 2 -->
+            <div class="gift-element" onclick="openGift(1)">
+                <div class="vector-ribbon-bow"><div class="bow-side"></div><div class="bow-side right"></div></div>
+                <div class="vector-gift-lid"></div>
+                <div class="vector-gift" style="background-color:#f7a8c4;"></div>
+                <div class="gift-label">Gift 2 💝</div>
+            </div>
+            <!-- Gift 3 -->
+            <div class="gift-element" onclick="openGift(2)">
+                <div class="vector-ribbon-bow"><div class="bow-side"></div><div class="bow-side right"></div></div>
+                <div class="vector-gift-lid"></div>
+                <div class="vector-gift" style="background-color:#a8d8a8;"></div>
+                <div class="gift-label">Gift 3 💌</div>
+            </div>
+        </div>
+
+        <button class="btn-next-cake" onclick="goToScreen('screen-cake')">🎂 Go to your cake!</button>
+    </div>
+
+    <!-- Gift Modal -->
+    <div class="gift-modal-overlay" id="gift-modal">
+        <div class="gift-modal">
+            <button class="close-modal" onclick="closeGift()">✕</button>
+            <div class="gift-emoji" id="modal-emoji">🎁</div>
+            <h3 id="modal-title">Your Gift</h3>
+            <p id="modal-desc">A special surprise just for you!</p>
+        </div>
+    </div>
+
+    <!-- SCREEN 5: Cake -->
+    <div id="screen-cake" class="screen canvas-bg">
+        <div class="content-title">Make a Wish! 🌟</div>
+
+        <div class="cake-wrapper">
+            <div class="candles-tier" id="candles-tier">
+                <div class="vector-candle"><div class="vector-flame" id="flame-0"></div></div>
+                <div class="vector-candle"><div class="vector-flame" id="flame-1"></div></div>
+                <div class="vector-candle"><div class="vector-flame" id="flame-2"></div></div>
+                <div class="vector-candle"><div class="vector-flame" id="flame-3"></div></div>
+                <div class="vector-candle"><div class="vector-flame" id="flame-4"></div></div>
+            </div>
+            <div class="vector-cake-body">
+                <div class="frosting-drips">
+                    <div class="drip"></div><div class="drip"></div><div class="drip"></div>
+                    <div class="drip"></div><div class="drip"></div><div class="drip"></div>
+                </div>
+            </div>
+        </div>
+
+        <p class="cake-message" id="cake-message">Click the button to blow out the candles! 🕯️</p>
+        <button class="btn-blow" id="blow-btn" onclick="blowCandles()">💨 Blow!</button>
+
+        <div id="wish-message" style="display:none; margin-top:25px; color:#1e70cf; font-size:1.3rem; font-weight:bold; max-width:400px; line-height:1.6;">
+            🎂 Happy Birthday! 🎂<br>
+            <span style="font-size:1rem; color:#555;">Wishing you all the love, joy, and happiness today and always! 💖</span>
+        </div>
+    </div>
+
+    <script>
+        const PASSCODE = '2606';
+        let current = '';
+
+        function pressbutton(val) {
+            if (current.length >= 4) return;
+            current += val;
+            updateSlots();
+            if (current.length === 4) {
+                setTimeout(checkPasscode, 300);
+            }
+        }
+
+        function deleteLast() {
+            if (current.length === 0) return;
+            current = current.slice(0, -1);
+            updateSlots();
+        }
+
+        function updateSlots() {
+            for (let i = 0; i < 4; i++) {
+                const slot = document.getElementById('slot-' + i);
+                slot.textContent = current[i] ? '●' : '';
+            }
+        }
+      function checkPasscode() {
+            if (current === PASSCODE) {
+                goToScreen('screen-yesno');
+                resetPasscode();
+            } else {
+                const container = document.getElementById('slots-container');
+                container.classList.add('shake');
+                container.addEventListener('animationend', () => {
+                    container.classList.remove('shake');
+                    goToScreen('screen-wrong');
+                    resetPasscode();
+                }, { once: true });
+            }
+        }
+
+        function resetPasscode() {
+            current = '';
+            updateSlots();
+        }
+
+        function goToScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // "No" button runs away on hover/touch
+        function runAway(btn) {
+            const parent = btn.parentElement;
+            const pw = parent.offsetWidth;
+            const ph = parent.offsetHeight;
+            const bw = btn.offsetWidth;
+            const bh = btn.offsetHeight;
+            const maxX = pw - bw;
+            const maxY = ph - bh;
+            const randomX = Math.floor(Math.random() * maxX) - maxX / 2;
+            const randomY = Math.floor(Math.random() * maxY) - maxY / 2;
+            btn.style.transform = `translate(${randomX}px, ${randomY}px)`;
+        }
+
+        // Gift data — customize these!
+        const giftData = [
+            {
+                emoji: '💌',
+                title: 'A Letter from the Heart',
+                desc: 'A heartfelt letter written just for you, filled with all the things words can barely express. 💕'
+            },
+            {
+                emoji: '🌹',
+                title: 'A Promise',
+                desc: 'A promise to always be there for you, through every laugh, every tear, and every moment in between. 🤝'
+            },
+            {
+                emoji: '✨',
+                title: 'A Wish',
+                desc: 'All the stars in the sky are shining just for you today. Make your biggest wish! 🌠'
+            }
+        ];
+
+        function openGift(index) {
+            const gift = giftData[index];
+            document.getElementById('modal-emoji').textContent = gift.emoji;
+            document.getElementById('modal-title').textContent = gift.title;
+            document.getElementById('modal-desc').textContent = gift.desc;
+            document.getElementById('gift-modal').classList.add('show');
+            launchConfetti(15);
+        }
+
+        function closeGift() {
+            document.getElementById('gift-modal').classList.remove('show');
+        }
+
+        // Candle blowing
+        let candlesOut = 0;
+        function blowCandles() {
+            const flames = document.querySelectorAll('.vector-flame');
+            flames.forEach((f, i) => {
+                setTimeout(() => {
+                    f.classList.add('out');
+                    candlesOut++;
+                    if (candlesOut === flames.length) {
+                        document.getElementById('cake-message').textContent = '🌟 Your wish has been sent to the stars! 🌟';
+                        document.getElementById('blow-btn').style.display = 'none';
+                        document.getElementById('wish-message').style.display = 'block';
+                        launchConfetti(40);
+                    }
+                }, i * 200);
+            });
+        }
+
+        // Confetti
+        function launchConfetti(count) {
+            const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6bdb', '#ff9800'];
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const piece = document.createElement('div');
+                    piece.className = 'confetti-piece';
+                    piece.style.left = Math.random() * 100 + 'vw';
+                    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    piece.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+                    piece.style.width = (8 + Math.random() * 8) + 'px';
+                    piece.style.height = (8 + Math.random() * 8) + 'px';
+                    document.body.appendChild(piece);
+                    piece.addEventListener('animationend', () => piece.remove());
+                }, i * 60);
+            }
+        }
+    </script>
+</body>
+</html>
